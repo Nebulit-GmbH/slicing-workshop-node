@@ -1,74 +1,120 @@
 #!/bin/bash
-# Ralph agent loop — two independent phases, each triggered by their own condition
-#
-# Phase 1: tasks.json has entries  → load slice from board, update .build-kit-node/slices/
-# Phase 2: $KIT_DIR/slices/**/index.json has a "Planned" slice → build it
-#
-# The phases are NOT causally linked — either can trigger on its own.
-#
-# Usage: ./ralph.sh [iterations] [project_dir]
-#   iterations  — number of loop cycles to run; 0 or omitted means run forever
-#   project_dir — path to the project root; defaults to ../  (parent of .build-kit-node)
+# Ralph - Long-running AI agent loop for Node.js slice-based development
+# Usage: ./ralph.sh [max_iterations]
 
 set -euo pipefail
 
-KIT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ITERATIONS="${1:-0}"
-PROJECT_DIR="${2:-"$KIT_DIR/.."}"
-TASKS_FILE="$KIT_DIR/tasks.json"
-PROMPT_FILE="$KIT_DIR/prompt.md"
-BACKEND_PROMPT_FILE="$KIT_DIR/backend-prompt.md"
-AGENT_SCRIPT="$KIT_DIR/agent.sh"
+MAX_ITERATIONS=${1:-10}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ ! -f "$KIT_DIR/.eventmodelers/config.json" ]]; then
-  echo "ERROR: No .eventmodelers/config.json found in $KIT_DIR"
-  exit 1
+PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
+ARCHIVE_DIR="$SCRIPT_DIR/archive"
+
+mkdir -p "$ARCHIVE_DIR"
+
+# ------------------------------------------------------------
+# Init progress file
+# ------------------------------------------------------------
+if [[ ! -f "$PROGRESS_FILE" ]]; then
+  echo "# Event Model Development Progress Log" > "$PROGRESS_FILE"
+  echo "Started: $(date)" >> "$PROGRESS_FILE"
+  echo "---" >> "$PROGRESS_FILE"
 fi
 
-echo "Ralph — kit: $KIT_DIR  project: $PROJECT_DIR"
+echo "Starting Ralph – Max iterations: $MAX_ITERATIONS"
 
-# Returns 0 if tasks.json has at least one task
-has_pending_tasks() {
-  [[ -f "$TASKS_FILE" ]] || return 1
-  local content
-  content=$(cat "$TASKS_FILE")
-  [[ "$content" != "[]" && -n "$content" ]]
-}
+# ------------------------------------------------------------
+# Main Ralph loop
+# ------------------------------------------------------------
+for i in $(seq 1 "$MAX_ITERATIONS"); do
+  echo
+  echo "═══════════════════════════════════════════════════════"
+  echo "  Ralph Iteration $i of $MAX_ITERATIONS"
+  echo "═══════════════════════════════════════════════════════"
 
-# Returns 0 if any JSON under .build-kit-node/slices/ contains a "Planned" status
-has_planned_slices() {
-  grep -rqi '"status"[[:space:]]*:[[:space:]]*"planned"' "$KIT_DIR/slices/" 2>/dev/null
-}
+  echo
+  echo ">>> Running Claude at $(date)"
+  echo ">>> Iteration $i" >> "$PROGRESS_FILE"
 
-# Runs agent.sh with the given prompt; retries on non-zero exit
-run_agent() {
-  local label="$1"
-  local prompt="$2"
+  TMP_OUTPUT=$(mktemp)
+
+  # ---- Run Claude safely -----------------
+  CLAUDE_SKIP=false
   while true; do
-    echo "[$(date -u +%H:%M:%S)] $label"
-    (cd "$PROJECT_DIR" && bash "$AGENT_SCRIPT" "$prompt") 2>&1 && return 0
-    echo "[$(date -u +%H:%M:%S)] Agent error — retrying in 60s..."
-    sleep 60
+    cat "$SCRIPT_DIR/prompt.md" \
+       | claude --dangerously-skip-permissions 2>&1 \
+       | tee "$TMP_OUTPUT" | tee -a "$PROGRESS_FILE"
+    CLAUDE_EXIT=${PIPESTATUS[1]}  # exit code of 'claude', not 'tee'
+
+    if [[ $CLAUDE_EXIT -eq 0 ]]; then
+      # Success, break out of the retry loop
+      break
+    elif grep -q "No messages returned" "$TMP_OUTPUT" 2>/dev/null; then
+      # Transient error: no messages returned - skip iteration
+      echo
+      echo "⚠️ Claude returned no messages (transient). Skipping iteration..."
+      CLAUDE_SKIP=true
+      break
+    else
+      # Non-zero exit code: probably spending limit reached
+      echo
+      echo "⚠️ Claude exited with an error. Possibly spending limit reached."
+      echo "Waiting 5 minutes before retry..."
+      sleep 300  # 5 minutes
+    fi
   done
-}
-
-cycle=0
-while [[ "$ITERATIONS" -eq 0 || "$cycle" -lt "$ITERATIONS" ]]; do
-  ran_something=false
-
-  if has_pending_tasks; then
-    run_agent "Phase 1: loading slice from board..." "$(cat "$PROMPT_FILE")"
-    ran_something=true
+  if [[ "$CLAUDE_SKIP" == "true" ]]; then
+    continue
   fi
 
-  if has_planned_slices; then
-    run_agent "Phase 2: building slice..." "$(cat "$BACKEND_PROMPT_FILE")"
-    ran_something=true
+  OUTPUT=$(cat "$TMP_OUTPUT")
+  rm "$TMP_OUTPUT"
+
+  if [[ -z "$OUTPUT" ]]; then
+    echo "⚠️ Claude returned no output. Retrying in 1 minute..."
+    sleep 60
+    continue  # retry
   fi
 
-  if [[ "$ran_something" == false ]]; then
-    sleep 3
+  # ---- Check for commit review failure -------------------
+  if echo "$OUTPUT" | grep -q "❌ COMMIT REVIEW FAILED"; then
+    echo
+    echo "⚠️  Commit review failed - workspace has been reset"
+    echo "📄 Review failure details recorded in progress.txt"
+    echo "🔄 Continuing to next iteration..."
+    echo
+    echo "Review failed at iteration $i - continuing loop" >> "$PROGRESS_FILE"
+    echo "Continuing: $(date)" >> "$PROGRESS_FILE"
+    echo "---" >> "$PROGRESS_FILE"
+    sleep 5  # Brief pause before continuing
+    continue  # Continue to next iteration
   fi
 
-  (( cycle++ )) || true
+  # ---- Completion check -----------------------------------
+  if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
+    echo
+    echo "🎉 Ralph completed all tasks!"
+    echo "Completed at iteration $i of $MAX_ITERATIONS"
+
+    echo
+    echo "Completed: $(date)" >> "$PROGRESS_FILE"
+    exit 0
+  fi
+
+  # ---- No tasks available check ---------------------------
+  if echo "$OUTPUT" | grep -q "<promise>NO_TASKS</promise>"; then
+    echo
+    echo "⏳ No tasks available. Waiting 30 seconds before next check..."
+    sleep 30
+    continue
+  fi
+
+  echo
+  echo "Iteration $i complete. Continuing..."
+  sleep 2
 done
+
+echo
+echo "⚠️ Ralph reached max iterations ($MAX_ITERATIONS) without completing all tasks."
+echo "Check $PROGRESS_FILE for status."
+exit 1

@@ -56,3 +56,25 @@ src/slices/
 - Use Bulma's flexbox utilities for layouts
 - Implement responsive design with Bulma's breakpoint classes
 - Leverage Bulma's color palette and typography classes
+
+## Codebase Patterns & Learnings
+
+### Project Structure
+- Context folder name maps to camelCase TypeScript folder: "Library Management" → `libraryManagement`
+- Events union lives in `src/slices/{contextPackage}/{Context}Events.ts`
+- Routes are auto-discovered by server.ts via glob on `dist/src/slices/**/routes{,-*}.js` — no manual wiring needed
+
+### Command Handler (STATE_CHANGE)
+- Throw with `{code: 'snake_case_code', message: '...'}` for business rule violations; routes catch by `err?.code`
+- `findEventstore()` is a singleton from `src/common/loadPostgresEventstore.ts`
+- No auth middleware exists (`supabase/requireUser` is not present) — skip auth in routes
+- `DeciderSpecification.then()` uses `isSubset` matching — `metadata: {}` in test assertions works even if actual has extra undefined keys
+
+### Projection (STATE_VIEW)
+- `PostgreSQLProjectionSpec.for({ projection, connectionString })` — connectionString is passed directly as DumboOptions
+- `postgreSQLRawSQLProjection` evolve returns `SQL[]` built via knex `.toQuery()` wrapped in `sql()`
+- Always create a new knex instance per evolve call with `pool: { min: 0, max: 1 }` and destroy in finally
+- knex `.delete().toQuery()` wrapped in `sql()` works for DELETE statements in postgreSQLRawSQLProjection
+
+### Slice Workflow
+- A slice with status "Planned" may mean an update to an existing slice, not just a new one — reconcile event dependencies against existing code before implementing
