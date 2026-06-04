@@ -278,6 +278,60 @@ npm test -- --testPathPattern=CatalogEntries
 
 Then call the endpoint to see the read model populated from the events written in Exercise 1.
 
+### Exercise 3 — Update a slice after a design change
+
+A new event (`Catalogue Entry Removed`) has been added to the EventModelers board, and two new BDD specifications were added to the `"Catalog Entries"` slice. In this exercise you merge the updated slice definition and let Ralph implement the changes.
+
+**Step 1 — Merge the updated branch**
+
+The updated slice definition lives on the `exercise-3` branch. Merge it into your working branch:
+
+```bash
+git merge exercise-3
+```
+
+This brings in the updated `.slices/Library Management/CatalogEntries/slice.json` with the new event and specs. Inspect the diff to see what changed:
+
+```bash
+git diff HEAD~1 .slices/
+```
+
+**Step 2 — Reset the slice status to planned**
+
+Ralph only picks up slices with `"status": "planned"`. Open `.slices/Library Management/index.json` and reset `"Catalog Entries"` back to planned:
+
+```json
+{
+  "title": "Catalog Entries",
+  "status": "planned",
+  ...
+}
+```
+
+**Step 3 — Run Ralph**
+
+```bash
+./ralph.sh
+# or
+node ralph.js
+```
+
+Ralph will reconcile the existing `CatalogEntriesProjection.ts` against the updated slice definition — it handles the `Catalogue Entry Removed` event and the two new specs without overwriting tests.
+
+**Step 4 — Review the changes**
+
+Once Ralph marks the slice `Done`, review what changed:
+
+```bash
+git diff HEAD~1 src/slices/libraryManagement/CatalogEntries/
+```
+
+Run the full test suite for the slice to confirm all specs pass — including the two new ones:
+
+```bash
+npm test -- --testPathPattern=CatalogEntries
+```
+
 ---
 
 ## Adding a new slice
