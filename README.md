@@ -160,6 +160,126 @@ Progress is logged to `progress.txt`.
 
 ---
 
+## Exercises
+
+### Exercise 1 — Let Ralph build a slice autonomously
+
+This exercise walks you through the full Ralph workflow: setting a slice to planned, starting the agent loop, and reviewing what was built.
+
+**Step 1 — Mark a slice as planned**
+
+Open `.slices/Library Management/index.json` and find the `"Create Catalog Entry"` slice. Change its `"status"` field to `"planned"`:
+
+```json
+{
+  "title": "Create Catalog Entry",
+  "status": "planned",
+  ...
+}
+```
+
+Saving the file is all that's needed — Ralph reads this file on every iteration.
+
+**Step 2 — Start Ralph**
+
+On macOS/Linux with bash:
+
+```bash
+./ralph.sh
+```
+
+On Windows (WSL or Git Bash):
+
+```bash
+bash ralph.sh
+```
+
+Alternatively, run the Node.js version directly (no bash required):
+
+```bash
+node ralph.js
+```
+
+Ralph will detect the planned slice, delegate it to Claude Code, and log progress to `progress.txt`.
+
+**Step 3 — Watch the agent build**
+
+You can tail the progress log while Ralph runs:
+
+```bash
+tail -f progress.txt
+```
+
+Ralph sets the slice to `"assigned": true` while it's being worked on, then marks it `"Done"` when tests pass.
+
+**Step 4 — Review the generated code**
+
+Once Ralph completes, inspect the slice output under `src/slices/libraryManagement/`:
+
+```
+src/slices/libraryManagement/
+└── CreateCatalogEntry/
+    ├── CommandHandler.ts       # Business logic and decider
+    ├── CommandHandler.test.ts  # Spec-driven unit tests
+    └── routes.ts               # Express route wiring
+```
+
+Run the tests to confirm everything passes:
+
+```bash
+npm test -- --testPathPattern=CreateCatalogEntry
+```
+
+Open Swagger UI at `http://localhost:3000/api-docs` to try the new endpoint live.
+
+### Exercise 2 — Add a read model (state-view slice)
+
+Repeat the same workflow for the `"Catalog Entries"` slice, which builds a projection (read model) instead of a command handler.
+
+**Step 1 — Mark the slice as planned**
+
+In `.slices/Library Management/index.json`, set `"Catalog Entries"` to `"planned"`:
+
+```json
+{
+  "title": "Catalog Entries",
+  "status": "planned",
+  ...
+}
+```
+
+**Step 2 — Start Ralph** (same as before)
+
+```bash
+./ralph.sh
+# or
+node ralph.js
+```
+
+**Step 3 — Review the generated code**
+
+This time Ralph will build a state-view slice:
+
+```
+src/slices/libraryManagement/
+└── CatalogEntries/
+    ├── CatalogEntriesProjection.ts       # Event → read model projection
+    ├── CatalogEntriesProjection.test.ts  # Projection tests
+    └── routes.ts                          # GET endpoint for the read model
+```
+
+A new Flyway migration will also appear in `migrations/` to create the projection table.
+
+Run the tests:
+
+```bash
+npm test -- --testPathPattern=CatalogEntries
+```
+
+Then call the endpoint to see the read model populated from the events written in Exercise 1.
+
+---
+
 ## Adding a new slice
 
 1. Design the slice in EventModelers and export the board config.
