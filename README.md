@@ -142,9 +142,18 @@ Routes are **auto-discovered** — any file matching `dist/src/slices/**/routes*
 
 ### Running Ralph
 
+**bash** (macOS/Linux):
+
 ```bash
 ./ralph.sh            # default: 10 iterations
 ./ralph.sh 20         # custom max iterations
+```
+
+**Node.js** (no bash required — works on Windows too):
+
+```bash
+node ralph.js         # default: 10 iterations
+node ralph.js 20      # custom max iterations
 ```
 
 Ralph automatically retries on transient Claude errors and waits when the spending limit is reached.
