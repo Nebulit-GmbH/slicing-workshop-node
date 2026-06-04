@@ -127,14 +127,100 @@
   "specifications": [
     {
       "vertical": false,
-      "id": "3458764674168172181",
+      "id": "3458764674337691573",
       "sliceName": "slice: Catalog Entries",
       "title": "spec: Catalog Entries - scenario",
       "given": [
         {
           "title": "Catalogue entry created",
           "tags": [],
-          "id": "3458764674168172187",
+          "examples": [],
+          "id": "3458764674337691576",
+          "index": 0,
+          "specRow": -1,
+          "type": "SPEC_EVENT",
+          "fields": [
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": "Harry Potter"
+            },
+            {
+              "name": "isbn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": ""
+            },
+            {
+              "name": "author",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": ""
+            },
+            {
+              "name": "description",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": ""
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": ""
+            }
+          ],
+          "linkedId": "3458764674084680720"
+        }
+      ],
+      "when": [],
+      "then": [
+        {
+          "title": "Catalog Entries",
+          "tags": [],
+          "examples": [],
+          "id": "3458764674337691575",
+          "index": 0,
+          "specRow": -1,
+          "type": "SPEC_READMODEL",
+          "fields": [
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": "Harry Potter"
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": ""
+            }
+          ],
+          "linkedId": "3458764674084680631"
+        }
+      ],
+      "comments": [],
+      "linkedId": "3458764674084680601"
+    },
+    {
+      "vertical": false,
+      "id": "3458764674337779954",
+      "sliceName": "slice: Catalog Entries",
+      "title": "spec: Catalog Entries - Entries removed",
+      "given": [
+        {
+          "title": "Catalogue entry created",
+          "tags": [],
+          "id": "3458764674337779958",
           "index": 0,
           "specRow": -1,
           "type": "SPEC_EVENT",
@@ -180,7 +266,7 @@
         {
           "title": "Catalogue entry removed",
           "tags": [],
-          "id": "3458764674168172189",
+          "id": "3458764674337779961",
           "index": 1,
           "specRow": -1,
           "type": "SPEC_EVENT",
@@ -202,7 +288,7 @@
         {
           "title": "Catalog Entries",
           "tags": [],
-          "id": "3458764674168172182",
+          "id": "3458764674337779955",
           "index": 0,
           "specRow": -1,
           "type": "SPEC_READMODEL",
@@ -224,90 +310,6 @@
           ],
           "linkedId": "3458764674084680631",
           "expectEmptyList": true
-        }
-      ],
-      "comments": [],
-      "linkedId": "3458764674084680601"
-    },
-    {
-      "vertical": false,
-      "id": "3458764674168172602",
-      "sliceName": "slice: Catalog Entries",
-      "title": "spec: Catalog Entries",
-      "given": [
-        {
-          "title": "Catalogue entry created",
-          "tags": [],
-          "id": "3458764674168172606",
-          "index": 0,
-          "specRow": -1,
-          "type": "SPEC_EVENT",
-          "fields": [
-            {
-              "name": "title",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            },
-            {
-              "name": "isbn",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            },
-            {
-              "name": "author",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            },
-            {
-              "name": "description",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            },
-            {
-              "name": "id",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            }
-          ],
-          "linkedId": "3458764674084680720"
-        }
-      ],
-      "when": [],
-      "then": [
-        {
-          "title": "Catalog Entries",
-          "tags": [],
-          "id": "3458764674168172603",
-          "index": 0,
-          "specRow": -1,
-          "type": "SPEC_READMODEL",
-          "fields": [
-            {
-              "name": "title",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            },
-            {
-              "name": "id",
-              "type": "String",
-              "subfields": [],
-              "cardinality": "Single",
-              "example": ""
-            }
-          ],
-          "linkedId": "3458764674084680631"
         }
       ],
       "comments": [],
